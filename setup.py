@@ -1,57 +1,65 @@
-import numpy as np
-import os.path as osp
+from pathlib import Path
 from setuptools import setup, find_packages
-from distutils.extension import Extension
-from Cython.Build import cythonize
+from setuptools.extension import Extension
+
+HERE = Path(__file__).resolve().parent
 
 
 def readme():
-    with open('TORCHREID_README.rst') as f:
-        content = f.read()
-    return content
+    candidates = [
+        HERE / "TORCHREID_README.rst",
+        HERE / "README.rst",
+        HERE / "README.md",
+        HERE / "README",
+    ]
+    for path in candidates:
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+    return "torchreid"
 
 
 def find_version():
-    version_file = 'torchreid/__init__.py'
-    with open(version_file, 'r') as f:
-        exec(compile(f.read(), version_file, 'exec'))
-    return locals()['__version__']
+    version_file = HERE / "torchreid" / "__init__.py"
+    namespace = {}
+    exec(compile(version_file.read_text(encoding="utf-8"), str(version_file), "exec"), namespace)
+    return namespace["__version__"]
 
 
-def numpy_include():
-    try:
-        numpy_include = np.get_include()
-    except AttributeError:
-        numpy_include = np.get_numpy_include()
-    return numpy_include
+def get_extensions():
+    import numpy
+    from Cython.Build import cythonize
+
+    extensions = [
+        Extension(
+            "torchreid.metrics.rank_cylib.rank_cy",
+            ["torchreid/metrics/rank_cylib/rank_cy.pyx"],
+            include_dirs=[numpy.get_include()],
+        )
+    ]
+    return cythonize(extensions)
 
 
-ext_modules = [
-    Extension(
-        'torchreid.metrics.rank_cylib.rank_cy',
-        ['torchreid/metrics/rank_cylib/rank_cy.pyx'],
-        include_dirs=[numpy_include()],
-    )
-]
-
-
-def get_requirements(filename='requirements.txt'):
-    here = osp.dirname(osp.realpath(__file__))
-    with open(osp.join(here, filename), 'r') as f:
-        requires = [line.replace('\n', '') for line in f.readlines()]
-    return requires
+def get_requirements(filename="requirements.txt"):
+    req_file = HERE / filename
+    if not req_file.exists():
+        return []
+    return [
+        line.strip()
+        for line in req_file.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
 
 
 setup(
-    name='torchreid',
+    name="torchreid",
     version=find_version(),
-    description='A library for deep learning person re-ID in PyTorch',
-    author='Kaiyang Zhou',
-    license='MIT',
+    description="A library for deep learning person re-ID in PyTorch",
+    author="Kaiyang Zhou",
+    license="MIT",
     long_description=readme(),
-    url='https://github.com/KaiyangZhou/deep-person-reid',
+    url="https://github.com/KaiyangZhou/deep-person-reid",
     packages=find_packages(),
     install_requires=get_requirements(),
-    keywords=['Person Re-Identification', 'Deep Learning', 'Computer Vision'],
-    ext_modules=cythonize(ext_modules)
+    keywords=["Person Re-Identification", "Deep Learning", "Computer Vision"],
+    ext_modules=get_extensions(),
 )
