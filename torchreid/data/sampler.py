@@ -5,7 +5,7 @@ import numpy as np
 import random
 from collections import defaultdict
 from torch.utils.data.sampler import Sampler, RandomSampler, SequentialSampler
-from tools.prepare_lookups_for_hierarchical_sampling import create_lookupdict
+from torchreid.utils.prepare_lookups_for_hierarchical_sampling import create_lookupdict
 
 AVAI_SAMPLERS = [
     'RandomIdentitySampler', 'SequentialSampler', 'RandomSampler',
