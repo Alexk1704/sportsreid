@@ -1,9 +1,9 @@
+import re
 from pathlib import Path
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
 HERE = Path(__file__).resolve().parent
-
 
 def readme():
     candidates = [
@@ -17,13 +17,13 @@ def readme():
             return path.read_text(encoding="utf-8")
     return "torchreid"
 
-
 def find_version():
     version_file = HERE / "torchreid" / "__init__.py"
-    namespace = {}
-    exec(compile(version_file.read_text(encoding="utf-8"), str(version_file), "exec"), namespace)
-    return namespace["__version__"]
-
+    content = version_file.read_text(encoding="utf-8")
+    match = re.search(r'^__version__\s*=\s*[\'"]([^\'"]+)[\'"]', content, re.MULTILINE)
+    if not match:
+        raise RuntimeError("Unable to find __version__")
+    return match.group(1)
 
 def get_extensions():
     import numpy
@@ -38,7 +38,6 @@ def get_extensions():
     ]
     return cythonize(extensions)
 
-
 def get_requirements(filename="requirements.txt"):
     req_file = HERE / filename
     if not req_file.exists():
@@ -48,7 +47,6 @@ def get_requirements(filename="requirements.txt"):
         for line in req_file.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.startswith("#")
     ]
-
 
 setup(
     name="torchreid",
